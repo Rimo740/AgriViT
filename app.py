@@ -16,67 +16,85 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CUSTOM CSS STYLING ---
+# --- CUSTOM CSS STYLING (Dark Glassmorphism) ---
 st.markdown("""
     <style>
-    /* Main Background Gradient */
+    /* 1. Main Background: Deep Black-Green Gradient */
     .stApp {
-        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        background: radial-gradient(circle at top left, #052e16, #000000);
+        color: #e2e8f0;
     }
-    
-    /* Card Styling */
-    .css-1r6slb0, .css-12oz5g7 {
-        background-color: white;
-        padding: 2rem;
-        border-radius: 15px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s ease;
-    }
-    
-    /* Headings */
-    h1, h2, h3 {
-        color: #166534 !important; /* Dark Green */
-        font-family: 'Helvetica Neue', sans-serif;
-    }
-    
-    /* Sidebar Styling */
+
+    /* 2. Sidebar Glass Effect */
     [data-testid="stSidebar"] {
-        background-color: #f0fdf4;
-        border-right: 1px solid #bbf7d0;
+        background-color: rgba(0, 20, 5, 0.6);
+        backdrop-filter: blur(12px);
+        border-right: 1px solid rgba(74, 222, 128, 0.1);
     }
     
-    /* Custom Button Styling */
+    /* 3. Headings with Neon Glow */
+    h1, h2, h3 {
+        color: #4ade80 !important; /* Neon Green */
+        font-family: 'Helvetica Neue', sans-serif;
+        text-shadow: 0 0 15px rgba(74, 222, 128, 0.3);
+    }
+    
+    /* 4. Glass Cards for Streamlit Containers */
+    div[data-testid="stVerticalBlock"] > div {
+        /* Optional: Add spacing if needed */
+    }
+
+    /* 5. Custom Button Styling (Neon Green Gradient) */
     .stButton>button {
-        color: white;
-        background: linear-gradient(to right, #22c55e, #16a34a);
+        color: #000;
+        font-weight: bold;
+        background: linear-gradient(90deg, #4ade80, #22c55e);
         border: none;
         border-radius: 8px;
-        padding: 0.5rem 1rem;
+        padding: 0.6rem 1.2rem;
         transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
     }
     .stButton>button:hover {
         transform: scale(1.05);
-        box-shadow: 0 5px 15px rgba(34, 197, 94, 0.4);
+        box-shadow: 0 0 25px rgba(74, 222, 128, 0.6);
+        color: #fff;
     }
     
-    /* Progress Bar Color */
-    .stProgress > div > div > div > div {
-        background-color: #16a34a;
+    /* 6. Inputs & file uploaders (Dark Glass) */
+    .stSelectbox > div > div, .stFileUploader {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        color: white !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 10px;
     }
     
-    /* Footer Styling */
+    /* 7. Footer Styling */
     .footer {
         position: fixed;
         left: 0;
         bottom: 0;
         width: 100%;
-        background-color: #f0fdf4;
-        color: #166534;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(5px);
+        color: #86efac;
         text-align: center;
-        padding: 10px;
-        border-top: 1px solid #bbf7d0;
+        padding: 12px;
+        border-top: 1px solid rgba(74, 222, 128, 0.2);
         font-size: 14px;
         z-index: 100;
+    }
+    
+    /* 8. Custom Glass Card Class for Results */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 25px;
+        text-align: center;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     }
     </style>
     """, unsafe_allow_html=True)
@@ -112,6 +130,7 @@ def load_model(model_name):
             path = os.path.join(BASE_DIR, "efficientnet_b0.pth")
             
         elif model_name == 'MobileViT':
+            # Swin-T structure used as MobileViT proxy
             model = models.swin_t(weights=None)
             model.head = nn.Linear(model.head.in_features, len(CLASS_NAMES))
             path = os.path.join(BASE_DIR, "mobilevit.pth")
@@ -126,7 +145,6 @@ def load_model(model_name):
         model.load_state_dict(state_dict)
         
         # CRITICAL: Convert back to Float32 for CPU usage
-        # (This handles the compressed weights correctly)
         model.float() 
         model.eval()
         return model
@@ -211,15 +229,16 @@ with col2:
                 class_name = CLASS_NAMES[predicted.item()]
                 score = confidence.item() * 100
                 
-                # Color Logic
-                if score > 85: status_color = "green"
-                elif score > 60: status_color = "orange"
-                else: status_color = "red"
+                # Color Logic for text glow
+                if score > 85: glow_color = "#4ade80" # Green
+                elif score > 60: glow_color = "#facc15" # Yellow/Orange
+                else: glow_color = "#ef4444" # Red
                 
+                # HTML Card for Result
                 st.markdown(f"""
-                <div style="background-color: #f0fdf4; border: 2px solid {status_color}; padding: 20px; border-radius: 10px; text-align: center;">
-                    <h2 style="color: #166534; margin:0;">{class_name}</h2>
-                    <h4 style="color: #555; margin:0;">Confidence: {score:.2f}%</h4>
+                <div class="glass-card" style="border-color: {glow_color};">
+                    <h2 style="color: {glow_color} !important; margin:0; text-shadow: 0 0 10px {glow_color};">{class_name}</h2>
+                    <h4 style="color: #e2e8f0; margin-top: 10px;">Confidence: {score:.2f}%</h4>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -235,8 +254,7 @@ with col2:
 
 # --- FOOTER ---
 st.markdown("""
-    <div style="margin-top: 50px; text-align: center; color: #555; font-size: 0.9em;">
-        <hr>
-        <p>Developed by <b>Rimo Bhuiyan</b> | AI/ML Engineer | Co-Founder @CollabCircle</p>
+    <div class="footer">
+        <p>Developed by <b style="color: #fff;">Rimo Bhuiyan</b> | AI/ML Engineer | Co-Founder @CollabCircle</p>
     </div>
     """, unsafe_allow_html=True)
